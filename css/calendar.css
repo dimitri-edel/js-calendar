@@ -1,0 +1,21 @@
+.main-container {
+    width: 100%;
+}
+
+.calendar-control-panel {
+    display: inline-grid;
+    grid-template-columns: 33% 33% 33%;
+    height: 15%;
+    width: 100%;
+    background-color: lightgray;
+}
+.calendar-container{
+    border: 1px solid black;
+    display: grid;
+    width: 100%;    
+}
+
+.calendar-row {
+    display: inline-grid;
+    grid-template-columns: 14% 14% 14% 14% 14% 14% 14%;
+}
