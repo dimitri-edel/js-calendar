@@ -8,6 +8,7 @@
     height: 15%;
     width: 100%;
     background-color: lightgray;
+    text-align: center;
 }
 .calendar-container{
     border: 1px solid black;
