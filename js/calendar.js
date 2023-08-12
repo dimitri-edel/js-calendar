@@ -29,8 +29,8 @@
         PUBLIC METHODS:
             addOnClickCalendarCellCallback(<function>)
             purpose: this function will be called if the user clicks on one of the cells(days) in the calendar
-            The function must take one parameter, that will be passed to it by calendar. The parameter is the 
-            string representation of the day number: 1, 2, 3, etc.
+            The function must have this signature function(day, month, year). The callendar will call it and
+            pass the corresponding numbers to it.
             NOTE: If you do not define a callback function and the user clicks on one of the days, they will 
                 get an alert with the number of the day. If the cell has no number in it, then nothing's going
                 to happen.
@@ -48,6 +48,15 @@ class DTECalendar {
         // To register this function pass it to the addOnclickCalendarCellCallback(<function>) method
         // on the instance of this class
         this.onClickCalendarCellCallback = null;
+        // Pointer to the function that should be called if the user clicks on the next month button
+        // in the control panel
+        this.onClickNextMonthCallback = null;
+        // Pointer to the function that should be called if the user clicks on the previous month button
+        // in the control panel
+        this.onClickPrevMonthCallback = null;
+        // The array registered at this address will contain the lists of items for each cell in the calendar
+        // Use the addCalendarItemList(<array>) to set The items that should be displayed in the cells
+        this.calendarCellItemLists = this.#createEmptyTaskList();
         // The main container, which will contain all the calendar cells and headings and buttons
         this.calendar_container = document.createElement("div");
         this.calendar_container.id = "calendar-container";
@@ -108,6 +117,7 @@ class DTECalendar {
     #onClickNextMonth = () => {
         this.#calculateNextMonth();
         this.#clearCalendarCells();
+        this.onClickNextMonthCallback(this.selected_month+1, this.selected_year);
         this.#setMonth(this.selected_month, this.selected_year);
         this.#updateElements();
         console.log(`current year :${this.selected_year} current_month:${this.selected_month}`);
@@ -126,6 +136,7 @@ class DTECalendar {
     #onClickPrevMonth = () => {
         this.#calculatePrevMonth();
         this.#clearCalendarCells();
+        this.onClickPrevMonthCallback(this.selected_month+1, this.selected_year);
         this.#setMonth(this.selected_month, this.selected_year);
         this.#updateElements();
         console.log(`current year :${this.selected_year} current_month:${this.selected_month}`);
@@ -145,6 +156,14 @@ class DTECalendar {
         // Update the heading
         let heading = document.getElementById("calendar-heading");
         heading.innerHTML = `${this.#getMonthName(this.selected_month)} ${this.selected_year}`;
+    }
+
+    #createEmptyTaskList(){
+        let task_list = [];
+        for(let i=0; i <= 31; i++){
+            task_list[i] = [];
+        }
+        return task_list;
     }
 
     #createContainer = () => {
@@ -177,13 +196,26 @@ class DTECalendar {
     // Inside the span, add another span for the label that bears the number of the day
     #createRow = (row, index) => {
         for (let i = 1; i <= 7; i++) {
+            // The cell 
             let span_elem = document.createElement("span");
+            // Label with day number
             let label = document.createElement("span");
+            // List to hold items like icons or names, the items will be added using <li>
+            // That shoudl appear inside the cell
+            let item_list = document.createElement("ul");
+            item_list.className = "calendar-cell-item-list";
+            // Set up the label with the number of the day
             label.className = "calendar-cell-day-label";
             label.innerHTML = "...";
+            // Add an eventListener to the cell
             span_elem.addEventListener("click", this.#onClickCalendarCell);
+            // Append the label to the cell
             span_elem.appendChild(label);
+            // Append the list to the cell
+            span_elem.appendChild(item_list);
+            // Give the cell an id='calendar-<row>-<column>'
             span_elem.id = `calendar-${index}-${i}`;
+            // Append the cell to the row
             row.appendChild(span_elem);
         }
     }
@@ -200,24 +232,42 @@ class DTECalendar {
         let cell = document.getElementById(e.currentTarget.id);
         let label = cell.getElementsByClassName("calendar-cell-day-label");
         if (isNumeric(label[0].innerHTML)) {
+            let day = parseInt(label[0].innerHTML);
+
             // If there is a callback function registered call it
             // and pass it the day number as an integer
             if (this.onClickCalendarCellCallback != null) {
-                this.onClickCalendarCellCallback(label[0].innerHTML);
+                this.onClickCalendarCellCallback(day, this.selected_month + 1, this.selected_year);
             } else {
-                alert(label[0].innerHTML);
+                alert("" + day + "." + (this.selected_month + 1) + "." + this.selected_year);
             }
         }
     }
 
+    // Register a function that will be called if a cell on the calendar has been clicked
     addOnClickCalendarCellCallback(func) {
-        this.onClickCalendarCellCallback = (params) => {
-            func(params);
+        this.onClickCalendarCellCallback = (day, month, year) => {
+            func(day, month, year);
+        }
+    }
+    // Register a function that will be called if the user clicks on the next month buttoon in 
+    // the control panel
+    addOnClickNextMonth(func){
+        this.onClickNextMonthCallback = (month, year) => {
+            this.calendarCellItemLists = func(month, year);
         }
     }
 
+    // Register a function that will be called if the user clicks on the previous month buttoon in 
+    // the control panel
+    addOnClickPrevtMonth(func){
+        this.onClickPrevMonthCallback = (month, year) => {
+            this.calendarCellItemLists = func(month, year);
+        }
+    }    
+
     // Returns true if the year parameter is a leap year
-    isLeapYear(year) {
+    #isLeapYear(year) {
         return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
     }
 
@@ -227,7 +277,7 @@ class DTECalendar {
         // be stored in the array, where the index corresponds to the month number
         let days_in_month = new Array();
         days_in_month[0] = 31; // January
-        days_in_month[1] = this.isLeapYear(year) ? 29 : 28; // February
+        days_in_month[1] = this.#isLeapYear(year) ? 29 : 28; // February
         days_in_month[2] = 31; // March
         days_in_month[3] = 30; // April
         days_in_month[4] = 31; // May
@@ -252,7 +302,7 @@ class DTECalendar {
         let last_day_of_month = this.#getLastDayOfMonth(month, year);
 
         let day_number = 1;
-        console.log(`first_week_day: ${first_week_day}`)
+         
 
         // the rows and columns are numbered 1-7
         for (let row = 1; row < 7; row++) {
@@ -296,13 +346,23 @@ class DTECalendar {
                 // Plot the day number into the calendar cell(span id='calendar-<row>-<column>')
                 let cell = document.getElementById(`calendar-${row}-${column}`);
                 let label = cell.getElementsByClassName('calendar-cell-day-label');
+                let item_list = cell.getElementsByClassName('calendar-cell-item-list');                
+                let list_len = this.calendarCellItemLists[day_number].length;
 
+                // If there are any items for this day add them to the list in this cell
+                if(list_len > 0){
+                    for(let item=0; item < list_len; item++){
+                        let li = document.createElement("li");
+                        li.innerHTML = this.calendarCellItemLists[day_number][item];
+                        item_list[0].appendChild(li);
+                    }
+                }
+                // Plot the day number in the cell
                 label[0].innerHTML = day_number.toString();
-                // cell.innerHTML = day_number.toString();
+                // Proceed to the next day
                 day_number++;
             }
-        }
-        console.log(`month:${month} year:${year} weekday:${first_week_day}`)
+        }        
     }
 
     #clearCalendarCells = () => {
@@ -311,7 +371,10 @@ class DTECalendar {
                 // Clear content of calendar cell(span id='calendar-<row>-<column>')
                 let cell = document.getElementById(`calendar-${row}-${column}`);
                 let label = cell.getElementsByClassName("calendar-cell-day-label");
+                let item_list = cell.getElementsByClassName("calendar-cell-item-list");
+
                 label[0].innerHTML = "...";
+                item_list[0].innerHTML = "";
             }
         }
     }
@@ -345,16 +408,6 @@ class TaskObject {
 }
 
 
-const weekday_names = ["", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-let container = document.getElementById("container");
-let calendar = new DTECalendar(weekday_names, month_names, container, "en");
-
-function callbackTest(params){
-    alert("This is the callback :"+params);
-}
-
-calendar.addOnClickCalendarCellCallback(callbackTest);
 
 // The task list for each month should be comprised of an array that is 32 fields long
 // The index 0 must remain blank, because there is no day number 0
@@ -362,22 +415,42 @@ calendar.addOnClickCalendarCellCallback(callbackTest);
 // At any one index you have the posibility to store an array of objects for that day
 // If the month has less than 31 days, then the remaining indexes will simply remain blank,
 // for I chose this layout, because it is more comforatable
-// The calendar class will extract the objects from the task_list array like so:
-// When the user clicks on one of the cells, eeach cell has the day number wrapped inside a 
-// span element with the CSS-className 'calendar-cell-day-label'
-// The innerHTML is a string representation of the day number
 // The day number will be extracted and used for fetching the array of task objects sitting
 // in the task_list array at the index = day number
-function getTaskList() {
+function getTaskList(month, year) {
     let task_list = [];
+    console.log("getTaskList("+month+","+year+")");
 
     for (let i = 0; i <= 31; i++) {
         task_list[i] = [];
     }
-
-    task_list[10][0] = new TaskObject("1", "dj", "true", null, "first task", "sadfkjsd", "10. Aug 2023 10:00", "2", "1", "1", "filename");
-    task_list[20][0] = new TaskObject("2", "dj", "true", null, "second task", "sadfkjsd", "20. Aug 2023 10:00", "2", "1", "1", "filename");
-    task_list[20][1] = new TaskObject("3", "dj", "true", null, "third task", "sadfkjsd", "20. Aug 2023 11:00", "2", "1", "1", "filename");
-
+    
+    // task_list[10][0] = new TaskObject("1", "dj", "true", null, "first task", "sadfkjsd", "10. Aug 2023 10:00", "2", "1", "1", "filename");
+    // task_list[20][0] = new TaskObject("2", "dj", "true", null, "second task", "sadfkjsd", "20. Aug 2023 10:00", "2", "1", "1", "filename");
+    // task_list[20][1] = new TaskObject("3", "dj", "true", null, "third task", "sadfkjsd", "20. Aug 2023 11:00", "2", "1", "1", "filename");
+    if (month == 8) {
+        task_list[10][0] = "<span class='task-icon'>T8-1</span>";
+        task_list[20][0] = "<span class='task-icon'>T8-2</span>";
+        task_list[20][1] = "<span class='task-icon'>T8-3</span>";
+        
+    } else {
+        task_list[10][0] = "<span class='task-icon'>TS-1</span>";
+        task_list[20][0] = "<span class='task-icon'>TS-2</span>";
+        task_list[20][1] = "<span class='task-icon'>TS-3</span>";
+        
+    }
+    
     return task_list;
 }
+const weekday_names = ["", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+let container = document.getElementById("container");
+let calendar = new DTECalendar(weekday_names, month_names, container, "en");
+
+function callbackTest(day, month, year) {
+    alert("This is the callback :" + day + "." + month + "." + year);
+}
+
+calendar.addOnClickCalendarCellCallback(callbackTest);
+calendar.addOnClickNextMonth(getTaskList);
+calendar.addOnClickPrevtMonth(getTaskList);

@@ -10,13 +10,24 @@
     background-color: lightgray;
     text-align: center;
 }
-.calendar-container{
+
+.calendar-container {
     border: 1px solid black;
     display: grid;
-    width: 100%;    
+    width: 100%;
 }
 
 .calendar-row {
     display: inline-grid;
     grid-template-columns: 14% 14% 14% 14% 14% 14% 14%;
+}
+
+.calendar-cell-item-list {
+    font-size: 9px;
+    list-style-type: none;
+    /* Remove bullets */
+    padding: 0;
+    /* Remove padding */
+    margin: 0;
+    /* Remove margins */
 }
