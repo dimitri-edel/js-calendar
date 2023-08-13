@@ -27,7 +27,7 @@
             NOTE: weekday_names must correspond to this setting
 
         PUBLIC METHODS:
-            addOnClickCalendarCellCallback(<function>)
+            addOnClickCalendarCellListner(<function>)
             purpose: this function will be called if the user clicks on one of the cells(days) in the calendar
             The function must have this signature function(day, month, year). The callendar will call it and
             pass the corresponding numbers to it.
@@ -45,15 +45,15 @@ class DTECalendar {
         this.calendar_format = format;
         // Slot for the callback-function that will be called by the onClickCalendarCell() method
         // if this property is not null
-        // To register this function pass it to the addOnclickCalendarCellCallback(<function>) method
+        // To register this function pass it to the addOnclickCalendarCellListner(<function>) method
         // on the instance of this class
-        this.onClickCalendarCellCallback = null;
+        this.onClickCalendarCellListener = null;
         // Pointer to the function that should be called if the user clicks on the next month button
         // in the control panel
-        this.onClickNextMonthCallback = null;
+        this.onClickNextMonthListener = null;
         // Pointer to the function that should be called if the user clicks on the previous month button
         // in the control panel
-        this.onClickPrevMonthCallback = null;
+        this.onClickPrevMonthListner = null;
         // The array registered at this address will contain the lists of items for each cell in the calendar
         // Use the addCalendarItemList(<array>) to set The items that should be displayed in the cells
         this.calendarCellItemLists = this.#createEmptyTaskList();
@@ -117,7 +117,10 @@ class DTECalendar {
     #onClickNextMonth = () => {
         this.#calculateNextMonth();
         this.#clearCalendarCells();
-        this.onClickNextMonthCallback(this.selected_month+1, this.selected_year);
+        // If there is a litner, call it
+        if(this.onClickNextMonthListener != null){
+            this.onClickNextMonthListener(this.selected_month+1, this.selected_year);
+        }
         this.#setMonth(this.selected_month, this.selected_year);
         this.#updateElements();
         console.log(`current year :${this.selected_year} current_month:${this.selected_month}`);
@@ -136,7 +139,10 @@ class DTECalendar {
     #onClickPrevMonth = () => {
         this.#calculatePrevMonth();
         this.#clearCalendarCells();
-        this.onClickPrevMonthCallback(this.selected_month+1, this.selected_year);
+        // If there is a litner, call it
+        if(this.onClickPrevMonthListner != null){
+            this.onClickPrevMonthListner(this.selected_month+1, this.selected_year);
+        }
         this.#setMonth(this.selected_month, this.selected_year);
         this.#updateElements();
         console.log(`current year :${this.selected_year} current_month:${this.selected_month}`);
@@ -236,8 +242,8 @@ class DTECalendar {
 
             // If there is a callback function registered call it
             // and pass it the day number as an integer
-            if (this.onClickCalendarCellCallback != null) {
-                this.onClickCalendarCellCallback(day, this.selected_month + 1, this.selected_year);
+            if (this.onClickCalendarCellListener != null) {
+                this.onClickCalendarCellListener(day, this.selected_month + 1, this.selected_year);
             } else {
                 alert("" + day + "." + (this.selected_month + 1) + "." + this.selected_year);
             }
@@ -245,23 +251,23 @@ class DTECalendar {
     }
 
     // Register a function that will be called if a cell on the calendar has been clicked
-    addOnClickCalendarCellCallback(func) {
-        this.onClickCalendarCellCallback = (day, month, year) => {
+    addOnClickCalendarCellListner(func) {
+        this.onClickCalendarCellListener = (day, month, year) => {
             func(day, month, year);
         }
     }
     // Register a function that will be called if the user clicks on the next month buttoon in 
     // the control panel
-    addOnClickNextMonth(func){
-        this.onClickNextMonthCallback = (month, year) => {
+    addOnClickNextMonthListner(func){
+        this.onClickNextMonthListener = (month, year) => {
             this.calendarCellItemLists = func(month, year);
         }
     }
 
     // Register a function that will be called if the user clicks on the previous month buttoon in 
     // the control panel
-    addOnClickPrevtMonth(func){
-        this.onClickPrevMonthCallback = (month, year) => {
+    addOnClickPrevtMonthListner(func){
+        this.onClickPrevMonthListner = (month, year) => {
             this.calendarCellItemLists = func(month, year);
         }
     }    
@@ -451,6 +457,6 @@ function callbackTest(day, month, year) {
     alert("This is the callback :" + day + "." + month + "." + year);
 }
 
-calendar.addOnClickCalendarCellCallback(callbackTest);
-calendar.addOnClickNextMonth(getTaskList);
-calendar.addOnClickPrevtMonth(getTaskList);
+calendar.addOnClickCalendarCellListner(callbackTest);
+calendar.addOnClickNextMonthListner(getTaskList);
+calendar.addOnClickPrevtMonthListner(getTaskList);
